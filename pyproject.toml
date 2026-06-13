@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gh-notify"
+version = "1.0.0"
+description = "GitHub notification monitor for KDE Plasma"
+requires-python = ">=3.10"
+
+[project.scripts]
+gh-notify = "gh_notify.__main__:main"
+
+[tool.setuptools.package-data]
+gh_notify = ["sounds/*.wav"]

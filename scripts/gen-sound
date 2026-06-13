@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Generate a custom notification WAV sound for gh-notify using numpy."""
+import wave
+from pathlib import Path
+import numpy as np
+
+OUTPUT_DIR = Path(__file__).resolve().parent.parent / "src" / "gh_notify" / "sounds"
+OUTPUT_FILE = OUTPUT_DIR / "notification.wav"
+
+SAMPLE_RATE = 16000
+
+
+def adsr(length: int, attack: float, decay: float, sustain: float, release: float) -> np.ndarray:
+    n = int(length * attack)
+    d = int(length * decay)
+    r = int(length * release)
+    s = length - n - d - r
+    if s < 0:
+        raise ValueError("Attack + decay + release exceeds total length")
+    env = np.ones(length, dtype=np.float32)
+    env[:n] = np.linspace(0, 1, n)
+    env[n:n+d] = np.linspace(1, sustain, d)
+    env[-r:] = np.linspace(sustain, 0, r)
+    return env
+
+
+def harmonic_tone(freq: float, duration: float, harmonics: list[tuple[float, float]]) -> np.ndarray:
+    t = np.linspace(0, duration, int(SAMPLE_RATE * duration), endpoint=False)
+    signal = np.zeros_like(t, dtype=np.float32)
+    for mult, amp in harmonics:
+        signal += amp * np.sin(2 * np.pi * freq * mult * t)
+    return signal
+
+
+def write_wav(path: Path, samples: np.ndarray) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    max_amp = 2**15 - 1
+    data = (samples * max_amp * 0.2).astype(np.int16)
+    with wave.open(str(path), "w") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(SAMPLE_RATE)
+        wf.writeframes(data.tobytes())
+
+
+def main():
+    tone1 = harmonic_tone(523, 0.1, [(1, 1.0), (2, 0.5), (3, 0.25), (4, 0.125)])
+    env1 = adsr(len(tone1), attack=0.1, decay=0.3, sustain=0.3, release=0.6)
+    tone1 *= env1
+
+    silence = np.zeros(int(SAMPLE_RATE * 0.05), dtype=np.float32)
+
+    tone2 = harmonic_tone(784, 0.15, [(1, 1.0), (2, 0.4), (3, 0.2), (5, 0.1)])
+    env2 = adsr(len(tone2), attack=0.1, decay=0.2, sustain=0.4, release=0.7)
+    tone2 *= env2
+
+    samples = np.concatenate([tone1, silence, tone2])
+    write_wav(OUTPUT_FILE, samples)
+    print(f"Generated {OUTPUT_FILE} ({len(samples)} samples, {len(samples)/SAMPLE_RATE:.2f}s)")
+
+
+if __name__ == "__main__":
+    main()

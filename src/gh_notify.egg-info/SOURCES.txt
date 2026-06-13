@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+src/gh_notify/__init__.py
+src/gh_notify/__main__.py
+src/gh_notify.egg-info/PKG-INFO
+src/gh_notify.egg-info/SOURCES.txt
+src/gh_notify.egg-info/dependency_links.txt
+src/gh_notify.egg-info/entry_points.txt
+src/gh_notify.egg-info/top_level.txt
+src/gh_notify/sounds/notification.wav
